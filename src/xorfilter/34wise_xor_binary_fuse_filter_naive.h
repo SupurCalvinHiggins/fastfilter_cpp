@@ -62,7 +62,7 @@ public:
 
   inline __attribute__((always_inline)) size_t
   getSizeFromHash(uint64_t hash) const {
-    return 3 + (__builtin_popcount(hash) & 1);
+    return 3 + (std::bitset<64>(hash).count() & 1);
   }
 
   explicit XorBinaryFuseFilter(const size_t size) {
