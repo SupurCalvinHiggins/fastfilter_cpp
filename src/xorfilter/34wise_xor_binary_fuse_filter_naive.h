@@ -1,6 +1,8 @@
-#ifndef FOURWISE_XOR_BINARY_FUSE_FILTER_XOR_FILTER_NAIVE_H_
-#define FOURWISE_XOR_BINARY_FUSE_FILTER_XOR_FILTER_NAIVE_H_
+#ifndef THREEFOURWISE_XOR_BINARY_FUSE_FILTER_XOR_FILTER_NAIVE_H_
+#define THREEFOURWISE_XOR_BINARY_FUSE_FILTER_XOR_FILTER_NAIVE_H_
 #include "xor_binary_fuse_filter.h"
+#include <bitset>
+
 namespace xorbinaryfusefilter_naive34wise {
 // status returned by a xor filter operation
 enum Status {
@@ -141,7 +143,7 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::AddAll(
       uint64_t k = keys[i];
       uint64_t hash = (*hasher)(k);
       size_t size = getSizeFromHash(hash);
-      for (int hi = 0; hi < size; hi++) {
+      for (size_t hi = 0; hi < size; hi++) {
         int index = getHashFromHash(hash, hi);
         t2vals[index].t2count++;
         t2vals[index].t2 ^= hash;
@@ -162,7 +164,7 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::AddAll(
         uint64_t hash = t2vals[index].t2;
         reverseOrder[reverseOrderPos] = hash;
         size_t size = getSizeFromHash(hash);
-        for (int hi = 0; hi < size; hi++) {
+        for (size_t hi = 0; hi < size; hi++) {
           size_t index3 = getHashFromHash(hash, hi);
           if (index3 == index) {
             reverseH[reverseOrderPos] = hi;
@@ -198,9 +200,9 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::AddAll(
     // unless the other two entries are already occupied
     FingerprintType xor2 = fingerprint(hash);
     size_t size = getSizeFromHash(hash);
-    for (int hi = 0; hi < size; hi++) {
+    for (size_t hi = 0; hi < size; hi++) {
       size_t h = getHashFromHash(hash, hi);
-      if (found == hi) {
+      if (found == (int)hi) {
         change = h;
       } else {
         // this is different from BDZ: using xor to calculate the
@@ -223,7 +225,7 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::Contain(
   // Could manually optimize.
   FingerprintType f = fingerprint(hash);
   size_t size = getSizeFromHash(hash);
-  for (int hi = 0; hi < size; hi++) {
+  for (size_t hi = 0; hi < size; hi++) {
     size_t h = getHashFromHash(hash, hi);
     f ^= fingerprints[h];
   }
