@@ -10,6 +10,7 @@
 
 // morton
 #include "binaryfusefilter_singleheader.h"
+#include "34wise_xor_binary_fuse_filter_naive.h"
 #include "bloom.h"
 #include "compressed_cuckoo_filter.h"
 #include "counting_bloom.h"
@@ -774,6 +775,29 @@ struct FilterAPI<
     xorbinaryfusefilter_naive::XorBinaryFuseFilter<ItemType, FingerprintType>> {
   using Table =
       xorbinaryfusefilter_naive::XorBinaryFuseFilter<ItemType, FingerprintType>;
+  static Table ConstructFromAddCount(size_t add_count) {
+    return Table(add_count);
+  }
+  static void Add(uint64_t, Table *) {
+    throw std::runtime_error("Unsupported");
+  }
+  static void AddAll(const vector<ItemType> &keys, const size_t start,
+                     const size_t end, Table *table) {
+    table->AddAll(keys, start, end);
+  }
+  static void Remove(uint64_t, Table *) {
+    throw std::runtime_error("Unsupported");
+  }
+  CONTAIN_ATTRIBUTES static bool Contain(uint64_t key, const Table *table) {
+    return (0 == table->Contain(key));
+  }
+};
+
+template <typename ItemType, typename FingerprintType>
+struct FilterAPI<
+    xorbinaryfusefilter_naive34wise::XorBinaryFuseFilter<ItemType, FingerprintType>> {
+  using Table =
+      xorbinaryfusefilter_naive34wise::XorBinaryFuseFilter<ItemType, FingerprintType>;
   static Table ConstructFromAddCount(size_t add_count) {
     return Table(add_count);
   }

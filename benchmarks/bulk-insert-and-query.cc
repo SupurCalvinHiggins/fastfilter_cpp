@@ -17,6 +17,7 @@
 #endif
 #include "filterapi.h"
 
+
 // The number of items sampled when determining the lookup performance
 const size_t MAX_SAMPLE_SIZE = 10 * 1000 * 1000;
 
@@ -434,6 +435,8 @@ int main(int argc, char * argv[]) {
     {3156, "StandardRibbon64_15"},
     {3776, "StandardRibbon64_7.7"},
 
+    {69420, "34-wiseBinaryFuse"},
+
     // Sort
     {100, "Sort"},
   };
@@ -590,6 +593,14 @@ int main(int argc, char * argv[]) {
 
   // Algorithms ----------------------------------------------------------
   int a;
+
+  // 34-wise Binary Fuse -------------------------------------------------
+  a = 69420;
+  if (algorithmId == a || algorithmId < 0 || (algos.find(a) != algos.end())) {
+      auto cf = FilterBenchmark<xorbinaryfusefilter_naive34wise::XorBinaryFuseFilter<uint64_t, uint8_t>>(
+          add_count, to_add, intersectionsize, mixed_sets, true);
+      cout << setw(NAME_WIDTH) << names[a] << cf << endl;
+  } 
 
   // Xor ----------------------------------------------------------
   a = 0;
