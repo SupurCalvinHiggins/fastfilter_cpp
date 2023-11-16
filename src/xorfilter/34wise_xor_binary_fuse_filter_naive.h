@@ -1,7 +1,7 @@
 #ifndef FOURWISE_XOR_BINARY_FUSE_FILTER_XOR_FILTER_NAIVE_H_
 #define FOURWISE_XOR_BINARY_FUSE_FILTER_XOR_FILTER_NAIVE_H_
 #include "xor_binary_fuse_filter.h"
-namespace xorbinaryfusefilter_naive4wise {
+namespace xorbinaryfusefilter_naive34wise {
 // status returned by a xor filter operation
 enum Status {
   Ok = 0,
@@ -34,7 +34,7 @@ public:
   size_t segmentCountLength;
   size_t segmentLength;
   size_t segmentLengthMask;
-  static constexpr size_t arity = 4;
+  static constexpr size_t arity = 3;
   FingerprintType *fingerprints;
 
   HashFamily *hasher;
@@ -58,6 +58,11 @@ public:
     uint64_t hh = hash;
     h ^= rotate(hh, index * 16) & segmentLengthMask;
     return h;
+  }
+
+  inline __attribute__((always_inline)) size_t
+  getSizeFromHash(uint64_t hash) const {
+    return 3 + (__builtin_popcount(hash) & 1);
   }
 
   explicit XorBinaryFuseFilter(const size_t size) {
@@ -135,7 +140,8 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::AddAll(
     for (size_t i = start; i < end; i++) {
       uint64_t k = keys[i];
       uint64_t hash = (*hasher)(k);
-      for (int hi = 0; hi < 4; hi++) {
+      size_t size = getSizeFromHash(hash);
+      for (int hi = 0; hi < size; hi++) {
         int index = getHashFromHash(hash, hi);
         t2vals[index].t2count++;
         t2vals[index].t2 ^= hash;
@@ -155,7 +161,8 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::AddAll(
         // It is still there!
         uint64_t hash = t2vals[index].t2;
         reverseOrder[reverseOrderPos] = hash;
-        for (int hi = 0; hi < 4; hi++) {
+        size_t size = getSizeFromHash(hash);
+        for (int hi = 0; hi < size; hi++) {
           size_t index3 = getHashFromHash(hash, hi);
           if (index3 == index) {
             reverseH[reverseOrderPos] = hi;
@@ -190,7 +197,8 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::AddAll(
     // we set table[change] to the fingerprint of the key,
     // unless the other two entries are already occupied
     FingerprintType xor2 = fingerprint(hash);
-    for (int hi = 0; hi < 4; hi++) {
+    size_t size = getSizeFromHash(hash);
+    for (int hi = 0; hi < size; hi++) {
       size_t h = getHashFromHash(hash, hi);
       if (found == hi) {
         change = h;
@@ -214,7 +222,8 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::Contain(
   uint64_t hash = (*hasher)(key);
   // Could manually optimize.
   FingerprintType f = fingerprint(hash);
-  for (int hi = 0; hi < 4; hi++) {
+  size_t size = getSizeFromHash(hash);
+  for (int hi = 0; hi < size; hi++) {
     size_t h = getHashFromHash(hash, hi);
     f ^= fingerprints[h];
   }
@@ -225,10 +234,10 @@ template <typename ItemType, typename FingerprintType, typename HashFamily>
 std::string
 XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::Info() const {
   std::stringstream ss;
-  ss << "4-wise XorBinaryFuseFilter Status:\n"
+  ss << "3-4-wise XorBinaryFuseFilter Status:\n"
      << "\t\tKeys stored: " << Size() << "\n";
   return ss.str();
 }
-} // namespace xorbinaryfusefilter_naive4wise
+} // namespace xorbinaryfusefilter_naive34wise
 
 #endif
