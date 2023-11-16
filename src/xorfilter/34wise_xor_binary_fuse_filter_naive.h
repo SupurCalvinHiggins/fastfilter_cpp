@@ -34,7 +34,7 @@ public:
   size_t segmentCountLength;
   size_t segmentLength;
   size_t segmentLengthMask;
-  static constexpr size_t arity = 3;
+  static constexpr size_t arity = 34;
   FingerprintType *fingerprints;
 
   HashFamily *hasher;
