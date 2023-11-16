@@ -1,7 +1,7 @@
-#ifndef THREEWISE_XOR_BINARY_FUSE_FILTER_XOR_FILTER_NAIVE_H_
-#define THREEWISE_XOR_BINARY_FUSE_FILTER_XOR_FILTER_NAIVE_H_
+#ifndef FOURWISE_XOR_BINARY_FUSE_FILTER_XOR_FILTER_NAIVE_H_
+#define FOURWISE_XOR_BINARY_FUSE_FILTER_XOR_FILTER_NAIVE_H_
 #include "xor_binary_fuse_filter.h"
-namespace xorbinaryfusefilter_naive {
+namespace xorbinaryfusefilter_naive4wise {
 // status returned by a xor filter operation
 enum Status {
   Ok = 0,
@@ -34,7 +34,7 @@ public:
   size_t segmentCountLength;
   size_t segmentLength;
   size_t segmentLengthMask;
-  static constexpr size_t arity = 3;
+  static constexpr size_t arity = 4;
   FingerprintType *fingerprints;
 
   HashFamily *hasher;
@@ -43,15 +43,20 @@ public:
     return (FingerprintType)hash;
   }
 
-  inline __attribute__((always_inline)) size_t getHashFromHash(uint64_t hash,
-                                                               int index) {
+  static inline __attribute__((always_inline)) uint64_t rotate(uint64_t n,
+                                                               unsigned int c) {
+    const unsigned int mask = (CHAR_BIT * sizeof(n) - 1);
+    c &= mask;
+    return (n << c) | (n >> ((-c) & mask));
+  }
+
+  inline __attribute__((always_inline)) size_t
+  getHashFromHash(uint64_t hash, int index) const {
     __uint128_t x = (__uint128_t)hash * (__uint128_t)segmentCountLength;
     uint64_t h = (uint64_t)(x >> 64);
     h += index * segmentLength;
-    // keep the lower 36 bits
-    uint64_t hh = hash & ((1UL << 36) - 1);
-    // index 0: right shift by 36; index 1: right shift by 18; index 2: no shift
-    h ^= (size_t)((hh >> (36 - 18 * index)) & segmentLengthMask);
+    uint64_t hh = hash;
+    h ^= rotate(hh, index * 16) & segmentLengthMask;
     return h;
   }
 
@@ -130,7 +135,7 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::AddAll(
     for (size_t i = start; i < end; i++) {
       uint64_t k = keys[i];
       uint64_t hash = (*hasher)(k);
-      for (int hi = 0; hi < 3; hi++) {
+      for (int hi = 0; hi < 4; hi++) {
         int index = getHashFromHash(hash, hi);
         t2vals[index].t2count++;
         t2vals[index].t2 ^= hash;
@@ -150,7 +155,7 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::AddAll(
         // It is still there!
         uint64_t hash = t2vals[index].t2;
         reverseOrder[reverseOrderPos] = hash;
-        for (int hi = 0; hi < 3; hi++) {
+        for (int hi = 0; hi < 4; hi++) {
           size_t index3 = getHashFromHash(hash, hi);
           if (index3 == index) {
             reverseH[reverseOrderPos] = hi;
@@ -185,7 +190,7 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::AddAll(
     // we set table[change] to the fingerprint of the key,
     // unless the other two entries are already occupied
     FingerprintType xor2 = fingerprint(hash);
-    for (int hi = 0; hi < 3; hi++) {
+    for (int hi = 0; hi < 4; hi++) {
       size_t h = getHashFromHash(hash, hi);
       if (found == hi) {
         change = h;
@@ -207,15 +212,12 @@ template <typename ItemType, typename FingerprintType, typename HashFamily>
 Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::Contain(
     const ItemType &key) const {
   uint64_t hash = (*hasher)(key);
+  // Could manually optimize.
   FingerprintType f = fingerprint(hash);
-  __uint128_t x = (__uint128_t)hash * (__uint128_t)segmentCountLength;
-  int h0 = (uint64_t)(x >> 64);
-  int h1 = h0 + segmentLength;
-  int h2 = h1 + segmentLength;
-  uint64_t hh = hash;
-  h1 ^= (size_t)((hh >> 18) & segmentLengthMask);
-  h2 ^= (size_t)((hh)&segmentLengthMask);
-  f ^= fingerprints[h0] ^ fingerprints[h1] ^ fingerprints[h2];
+  for (int hi = 0; hi < 4; hi++) {
+    size_t h = getHashFromHash(hash, hi);
+    f ^= fingerprints[h];
+  }
   return f == 0 ? Ok : NotFound;
 }
 
@@ -223,9 +225,10 @@ template <typename ItemType, typename FingerprintType, typename HashFamily>
 std::string
 XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::Info() const {
   std::stringstream ss;
-  ss << "XorBinaryFuseFilter Status:\n"
+  ss << "4-wise XorBinaryFuseFilter Status:\n"
      << "\t\tKeys stored: " << Size() << "\n";
   return ss.str();
 }
-} // namespace xorbinaryfusefilter_naive
+} // namespace xorbinaryfusefilter_naive4wise
+
 #endif
