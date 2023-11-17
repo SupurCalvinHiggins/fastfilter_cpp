@@ -226,6 +226,19 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::Contain(
   // Could manually optimize.
   FingerprintType f = fingerprint(hash);
   size_t size = getSizeFromHash(hash);
+  size_t h0 = getHashFromHash(hash, 0);
+  f ^= fingerprints[h0];
+  size_t h1 = getHashFromHash(hash, 1);
+  f ^= fingerprints[h1];
+  size_t h2 = getHashFromHash(hash, 2);
+  f ^= fingerprints[h2];
+  size_t h3 = getHashFromHash(hash, 3);
+  // f ^= size == 4 ? fingerprints[h3] : 0;
+  f ^= fingerprints[h3] * (size == 4);
+  return f == 0 ? Ok : NotFound;
+
+  FingerprintType f = fingerprint(hash);
+  size_t size = getSizeFromHash(hash);
   for (size_t hi = 0; hi < size; hi++) {
     size_t h = getHashFromHash(hash, hi);
     f ^= fingerprints[h];
