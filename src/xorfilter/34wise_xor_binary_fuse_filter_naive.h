@@ -36,7 +36,7 @@ public:
   size_t segmentCountLength;
   size_t segmentLength;
   size_t segmentLengthMask;
-  static constexpr size_t arity = 34;
+  static constexpr size_t arity = 4;
   FingerprintType *fingerprints;
 
   HashFamily *hasher;
@@ -64,19 +64,20 @@ public:
 
   inline __attribute__((always_inline)) size_t
   getSizeFromHash(uint64_t hash) const {
+    // return 3 + (hash & 1);
     return 3 + (std::bitset<64>(hash).count() & 1);
   }
 
   explicit XorBinaryFuseFilter(const size_t size) {
     hasher = new HashFamily();
     this->size = size;
-    this->segmentLength = calculateSegmentLength(arity, size);
+    this->segmentLength = calculateSegmentLength(arity + 30, size);
     // the current implementation hardcodes a 18-bit limit to
     // to the segment length.
     if (this->segmentLength > (1 << 18)) {
       this->segmentLength = (1 << 18);
     }
-    double sizeFactor = calculateSizeFactor(arity, size);
+    double sizeFactor = calculateSizeFactor(arity + 30, size);
     size_t capacity = size * sizeFactor;
     size_t segmentCount =
         (capacity + segmentLength - 1) / segmentLength - (arity - 1);

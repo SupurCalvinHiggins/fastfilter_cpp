@@ -400,6 +400,7 @@ int main(int argc, char * argv[]) {
 
     {96, "XorBinaryFuse8-naive"},
     {97, "XorBinaryFuse16-naive"},
+    {102, "XorBinaryFuse8-4wises-naive"},
     {116, "XorBinaryFuse8"},
     {117, "XorBinaryFuse16"},
     {118, "XorBinaryFuse8-4wise"},

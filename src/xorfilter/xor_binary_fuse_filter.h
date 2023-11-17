@@ -12,11 +12,11 @@ using namespace hashing;
 
 size_t calculateSegmentLength(size_t arity, size_t size) {
   size_t segmentLength;
-  if (arity == 3 || arity == 34) {
+  if (arity == 3) {
     // We deliberately divide a log by a log so that the reader does not have
     // to ask about the basis of the log.
     segmentLength = 1L << (int)floor(log(size) / log(3.33) + 2.25);
-  } else if (arity == 4) {
+  } else if (arity == 4 || arity == 34) {
     segmentLength = 1L << (int)floor(log(size) / log(2.91) - 0.5);
   } else {
     // not supported
@@ -33,7 +33,8 @@ double calculateSizeFactor(size_t arity, size_t size) {
   } else if (arity == 4) {
     sizeFactor = fmax(1.075, 0.77 + 0.305 * log(600000) / log(size));
   } else if (arity == 34) {
-    sizeFactor = fmax(1.100, 0.875 + 0.25 * log(1000000) / log(size));
+    sizeFactor = fmax(1.100, 0.77 + 0.305 * log(600000) / log(size));
+    // sizeFactor = fmax(1.100, 0.875 + 0.25 * log(1000000) / log(size));
   } else {
     // not supported
     sizeFactor = 2.0;
