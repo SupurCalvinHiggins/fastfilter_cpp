@@ -64,7 +64,7 @@ public:
 
   inline __attribute__((always_inline)) size_t
   getSizeFromHash(uint64_t hash) const {
-    // return 3 + (hash & 1);
+    // return 3 + (__builtin_popcount(hash) & 1);
     return 3 + (std::bitset<64>(hash).count() & 1);
   }
 
@@ -89,8 +89,8 @@ public:
         this->segmentCount <= arity - 1 ? 1 : this->segmentCount - (arity - 1);
     this->arrayLength = (this->segmentCount + arity - 1) * this->segmentLength;
     this->segmentCountLength = this->segmentCount * this->segmentLength;
-    fingerprints = new FingerprintType[arrayLength]();
-    std::fill_n(fingerprints, arrayLength, 0);
+    fingerprints = new FingerprintType[arrayLength+1]();
+    std::fill_n(fingerprints, arrayLength+1, 0);
   }
 
   ~XorBinaryFuseFilter() {
@@ -208,10 +208,10 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::AddAll(
       } else {
         // this is different from BDZ: using xor to calculate the
         // fingerprint
-        xor2 ^= fingerprints[h];
+        xor2 ^= fingerprints[h+1];
       }
     }
-    fingerprints[change] = xor2;
+    fingerprints[change+1] = xor2;
   }
   delete[] reverseOrder;
   delete[] reverseH;
@@ -227,23 +227,22 @@ Status XorBinaryFuseFilter<ItemType, FingerprintType, HashFamily>::Contain(
   FingerprintType f = fingerprint(hash);
   size_t size = getSizeFromHash(hash);
   size_t h0 = getHashFromHash(hash, 0);
-  f ^= fingerprints[h0];
+  f ^= fingerprints[h0+1];
   size_t h1 = getHashFromHash(hash, 1);
-  f ^= fingerprints[h1];
+  f ^= fingerprints[h1+1];
   size_t h2 = getHashFromHash(hash, 2);
-  f ^= fingerprints[h2];
+  f ^= fingerprints[h2+1];
   size_t h3 = getHashFromHash(hash, 3);
-  // f ^= size == 4 ? fingerprints[h3] : 0;
-  f ^= fingerprints[h3] * (size == 4);
+  f ^= fingerprints[(h3 + 1) * (size == 4)];
   return f == 0 ? Ok : NotFound;
 
-  FingerprintType f = fingerprint(hash);
-  size_t size = getSizeFromHash(hash);
-  for (size_t hi = 0; hi < size; hi++) {
-    size_t h = getHashFromHash(hash, hi);
-    f ^= fingerprints[h];
-  }
-  return f == 0 ? Ok : NotFound;
+  // FingerprintType f = fingerprint(hash);
+  // size_t size = getSizeFromHash(hash);
+  // for (size_t hi = 0; hi < size; hi++) {
+  //   size_t h = getHashFromHash(hash, hi);
+  //   f ^= fingerprints[h];
+  // }
+  // return f == 0 ? Ok : NotFound;
 }
 
 template <typename ItemType, typename FingerprintType, typename HashFamily>
