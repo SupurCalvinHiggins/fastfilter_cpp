@@ -1,0 +1,26 @@
+KEY TAKEAWAY:
+# of instructions in hashing is bottleneck
+
+
+ROB base is the first outstanding load. each load takes ~45 instructions.
+with 12 outstanding misses, ROB is full (45 * 12 ~= 512), so we can't run 
+ahead to compute future hashes. This means when load finishes, we have to
+actually spend time computing another hash before issuing a load. this
+leads to 80% of time memory stalled and 20% time not stalled.
+
+IPC is ~1.75 during non-stall (sus calculation but probably reasonable 
+enough) so after miss completes, must spend 20-25 cycles before issuing
+next load
+
+compiler probably lines up load issues. so we get wave of completes and
+need to scramble to fill back up.
+
+not a lot of parallelism in single hash. so when hashes start resolving 
+1 by 1, we have issues. IPC drops. we cant even run ahead to start next
+hash. 
+
+how often do we get a resolve? every 17 cycles. so we have to finish in
+17 cycles or we start backing up (but not for real bc we can support 
+them in parallel; i.e. if we have to do 2 hashes at once, we actually
+are just going twice as fast bc ILP). this actually doesn't make any 
+sense... 
